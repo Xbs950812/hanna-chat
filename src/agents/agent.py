@@ -11,11 +11,11 @@ from storage.memory.memory_saver import get_memory_saver
 
 LLM_CONFIG = "config/agent_llm_config.json"
 
-# 保留最近 10 轮对话 (20 条消息)，避免记忆过多导致回答混乱
-MAX_MESSAGES = 20
+# 保留最近 5 轮对话 (10 条消息)，最大限度减少记忆混淆
+MAX_MESSAGES = 10
 
 def _windowed_messages(old, new):
-    """滑动窗口: 只保留最近 MAX_MESSAGES 条消息，防止对话记忆导致回答混淆"""
+    """滑动窗口: 只保留最近 MAX_MESSAGES 条消息，最大限度减少记忆混淆"""
     return add_messages(old, new)[-MAX_MESSAGES:]  # type: ignore
 
 class AgentState(MessagesState):
