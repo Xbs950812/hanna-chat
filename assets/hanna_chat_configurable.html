@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>韩娜 - 聊天</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background-color: #ededed;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航栏 */
+        .chat-header {
+            background-color: #ededed;
+            border-bottom: 1px solid #dcdcdc;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .back-button {
+            font-size: 18px;
+            color: #1aad19;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .header-icons {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+            font-size: 20px;
+            color: #1aad19;
+        }
+
+        /* API设置面板 */
+        .api-settings {
+            background-color: rgba(0, 0, 0, 0.5);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .api-settings.show {
+            display: flex;
+        }
+
+        .api-settings-content {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .api-settings h3 {
+            margin-bottom: 16px;
+            color: #333;
+        }
+
+        .api-settings label {
+            display: block;
+            margin-bottom: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .api-settings input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+
+        .api-settings-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .api-settings button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .api-settings button.primary {
+            background-color: #1aad19;
+            color: white;
+        }
+
+        .api-settings button.secondary {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        /* API状态指示器 */
+        .api-status {
+            font-size: 12px;
+            color: #999;
+            margin-left: 8px;
+        }
+
+        .api-status.connected {
+            color: #1aad19;
+        }
+
+        .api-status.disconnected {
+            color: #ff6b6b;
+        }
+
+        /* 聊天区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 70px 12px 60px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 时间戳 */
+        .timestamp {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .timestamp span {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* 消息气泡 */
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+
+        .message.received {
+            flex-direction: row;
+        }
+
+        .message.sent {
+            flex-direction: row-reverse;
+        }
+
+        /* 头像 */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .message.received .avatar {
+            margin-right: 10px;
+        }
+
+        .message.sent .avatar {
+            margin-left: 10px;
+        }
+
+        /* 用户头像占位 */
+        .user-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* 消息内容 */
+        .message-content {
+            max-width: 70%;
+            position: relative;
+        }
+
+        .message.received .message-content {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .message.sent .message-content {
+            background-color: #95ec69;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        /* 消息文字 */
+        .message-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #000;
+            word-wrap: break-word;
+        }
+
+        /* 消息三角形 */
+        .message.received .message-content::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 12px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 6px solid #fff;
+        }
+
+        .message.sent .message-content::before {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 12px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid #95ec69;
+        }
+
+        /* 输入区域 */
+        .input-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #f7f7f7;
+            border-top: 1px solid #dcdcdc;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-icons {
+            font-size: 24px;
+            color: #1aad19;
+            cursor: pointer;
+        }
+
+        .input-field {
+            flex: 1;
+            background-color: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .input-field:focus {
+            border-color: #1aad19;
+        }
+
+        .send-button {
+            background-color: #95ec69;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #000;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .send-button:hover {
+            background-color: #89e563;
+        }
+
+        /* 加载动画 */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #b0b0b0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.6);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 滚动条样式 */
+        .chat-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .chat-header {
+                padding: 10px 14px;
+            }
+
+            .header-title {
+                font-size: 17px;
+            }
+
+            .chat-container {
+                padding: 66px 10px 60px;
+            }
+
+            .message-content {
+                max-width: 75%;
+            }
+
+            .message-text {
+                font-size: 15px;
+            }
+
+            .input-area {
+                padding: 8px 10px;
+            }
+
+            .input-field {
+                font-size: 15px;
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="chat-header">
+        <div class="back-button">‹</div>
+        <div class="header-title">
+            韩娜
+            <span class="api-status" id="apiStatus">检查中...</span>
+        </div>
+        <div class="header-icons">
+            <span onclick="openApiSettings()" style="cursor: pointer;" title="API设置">⚙️</span>
+        </div>
+    </div>
+
+    <!-- API设置面板 -->
+    <div class="api-settings" id="apiSettings">
+        <div class="api-settings-content">
+            <h3>⚙️ API设置</h3>
+            <label>API地址：</label>
+            <input type="text" id="apiUrlInput" placeholder="http://localhost:5001/api/chat" value="">
+            <label>模式：</label>
+            <div style="margin-bottom: 16px; display: flex; gap: 8px;">
+                <button onclick="setMode('local')" style="flex: 1; padding: 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">本地API</button>
+                <button onclick="setMode('mock')" style="flex: 1; padding: 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer;">模拟模式</button>
+            </div>
+            <div class="api-settings-buttons">
+                <button class="secondary" onclick="closeApiSettings()">取消</button>
+                <button class="primary" onclick="saveApiSettings()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天区域 -->
+    <div class="chat-container" id="chatContainer">
+        <!-- 欢迎消息 -->
+        <div class="timestamp">
+            <span>刚刚</span>
+        </div>
+
+        <div class="message received">
+            <div class="avatar">
+                <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+            </div>
+            <div class="message-content">
+                <div class="message-text">你好呀！😊 我是韩娜，很高兴认识你！我是你的中国朋友～<br><br>无论你想了解中国的日常生活、美食推荐，还是需要帮忙解决各种小麻烦，我都很乐意帮你！<br><br>你在旅行还是生活呢？有什么特别想知道的吗？🌸</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="input-area">
+        <div class="input-icons">🎤</div>
+        <textarea
+            class="input-field"
+            id="messageInput"
+            placeholder="输入消息..."
+            rows="1"
+            onkeydown="handleKeyDown(event)"
+        ></textarea>
+        <div class="input-icons">😊</div>
+        <div class="input-icons">⊕</div>
+        <button class="send-button" id="sendButton" onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        // 消息历史
+        const messages = [];
+        let isTyping = false;
+
+        // API配置
+        let API_URL = localStorage.getItem('hanna_api_url') || 'http://localhost:5001/api/chat';
+        let USE_MOCK_API = localStorage.getItem('hanna_use_mock_api') === 'true';
+
+        // 更新API状态
+        async function checkApiStatus() {
+            const apiStatus = document.getElementById('apiStatus');
+            const apiUrl = document.getElementById('apiUrlInput');
+
+            apiUrl.value = API_URL;
+
+            if (USE_MOCK_API) {
+                apiStatus.textContent = '(模拟模式)';
+                apiStatus.className = 'api-status';
+                return;
+            }
+
+            try {
+                // 尝试ping API
+                const url = new URL(API_URL);
+                const healthUrl = `${url.protocol}//${url.host}/health`;
+
+                const response = await fetch(healthUrl, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(3000)
+                });
+
+                if (response.ok) {
+                    apiStatus.textContent = '(已连接)';
+                    apiStatus.className = 'api-status connected';
+                } else {
+                    throw new Error('API不可用');
+                }
+            } catch (error) {
+                apiStatus.textContent = '(未连接)';
+                apiStatus.className = 'api-status disconnected';
+                console.warn('API连接失败:', error);
+            }
+        }
+
+        // 打开API设置
+        function openApiSettings() {
+            document.getElementById('apiSettings').classList.add('show');
+            document.getElementById('apiUrlInput').value = API_URL;
+        }
+
+        // 关闭API设置
+        function closeApiSettings() {
+            document.getElementById('apiSettings').classList.remove('show');
+        }
+
+        // 设置模式
+        function setMode(mode) {
+            if (mode === 'local') {
+                document.getElementById('apiUrlInput').value = 'http://localhost:5001/api/chat';
+            } else if (mode === 'mock') {
+                document.getElementById('apiUrlInput').value = 'mock';
+            }
+        }
+
+        // 保存API设置
+        function saveApiSettings() {
+            const newApiUrl = document.getElementById('apiUrlInput').value.trim();
+
+            if (newApiUrl === 'mock') {
+                USE_MOCK_API = true;
+                localStorage.setItem('hanna_use_mock_api', 'true');
+            } else {
+                USE_MOCK_API = false;
+                API_URL = newApiUrl;
+                localStorage.setItem('hanna_api_url', API_URL);
+                localStorage.setItem('hanna_use_mock_api', 'false');
+            }
+
+            closeApiSettings();
+            checkApiStatus();
+
+            // 显示保存成功提示
+            const apiStatus = document.getElementById('apiStatus');
+            const originalText = apiStatus.textContent;
+            apiStatus.textContent = '(已保存)';
+            setTimeout(() => {
+                apiStatus.textContent = originalText;
+                checkApiStatus();
+            }, 2000);
+        }
+
+        // 处理回车发送
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 自动调整输入框高度
+        const inputField = document.getElementById('messageInput');
+        inputField.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // 发送消息
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || isTyping) return;
+
+            // 清空输入框
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 添加用户消息
+            addMessage(message, 'sent');
+
+            // 显示正在输入
+            showTypingIndicator();
+
+            // 调用真实API获取回复
+            try {
+                const response = await generateResponse(message);
+                hideTypingIndicator();
+                addMessage(response, 'received');
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('抱歉，获取回复时出错了。请稍后再试。', 'received');
+                console.error('Error:', error);
+            }
+        }
+
+        // 添加消息到聊天界面
+        function addMessage(text, type) {
+            const chatContainer = document.getElementById('chatContainer');
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'timestamp';
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            timestampDiv.innerHTML = `<span>${timeString}</span>`;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            if (type === 'received') {
+                messageDiv.innerHTML = `
+                    <div class="avatar">
+                        <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="avatar user-avatar">
+                        你
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+            }
+
+            chatContainer.appendChild(timestampDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            messages.push({ text, type, time: timeString });
+        }
+
+        // 显示正在输入指示器
+        function showTypingIndicator() {
+            isTyping = true;
+            const chatContainer = document.getElementById('chatContainer');
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message received';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="avatar">
+                    <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+                </div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 隐藏正在输入指示器
+        function hideTypingIndicator() {
+            isTyping = false;
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // 生成AI回复
+        async function generateResponse(userMessage) {
+            // 如果使用模拟模式
+            if (USE_MOCK_API) {
+                const responses = [
+                    "(拍肩膀) 哈哈，我懂！😊 这事儿我当年也遇到过...",
+                    "（认真脸）这很正常！刚到一个新地方都会有这种感觉～",
+                    "（偷笑）别担心，有我在呢！",
+                    "（眼睛一亮）这个我知道！让我来告诉你～",
+                    "（温暖地笑）你已经做得很好了！继续加油！💪",
+                    "（点头）嗯嗯，我明白那种感觉...",
+                    "（比划手势）来，我教你怎么做～"
+                ];
+
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                return `${randomResponse}\n\n（这是模拟回复，点击右上角⚙️设置切换到真实API）`;
+            }
+
+            // 调用真实API
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        session_id: 'default'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.reply) {
+                    return data.reply;
+                } else if (data.error) {
+                    return `抱歉，出错了：${data.error}`;
+                } else {
+                    return '抱歉，我现在无法回复。请稍后再试。';
+                }
+            } catch (error) {
+                console.error('API调用失败:', error);
+                // 如果API调用失败，提供降级提示
+                return '无法连接到服务器。请检查API设置（点击右上角⚙️），或切换到模拟模式。';
+            }
+        }
+
+        // 页面加载时检查API状态
+        window.addEventListener('DOMContentLoaded', () => {
+            checkApiStatus();
+        });
+    </script>
+</body>
+</html>
