@@ -373,7 +373,7 @@
         });
 
         // 发送消息
-        function sendMessage() {
+        async function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value.trim();
 
@@ -389,12 +389,16 @@
             // 显示正在输入
             showTypingIndicator();
 
-            // 模拟AI回复
-            setTimeout(() => {
+            // 调用真实API获取回复
+            try {
+                const response = await generateResponse(message);
                 hideTypingIndicator();
-                const response = generateResponse(message);
                 addMessage(response, 'received');
-            }, 1000 + Math.random() * 1000);
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('抱歉，获取回复时出错了。请稍后再试。', 'received');
+                console.error('Error:', error);
+            }
         }
 
         // 添加消息到聊天界面
@@ -470,20 +474,41 @@
             }
         }
 
-        // 生成AI回复（模拟）
-        function generateResponse(userMessage) {
-            const responses = [
-                "(拍肩膀) 哈哈，我懂！😊 这事儿我当年也遇到过...",
-                "（认真脸）这很正常！刚到一个新地方都会有这种感觉～",
-                "（偷笑）别担心，有我在呢！",
-                "（眼睛一亮）这个我知道！让我来告诉你～",
-                "（温暖地笑）你已经做得很好了！继续加油！💪",
-                "（点头）嗯嗯，我明白那种感觉...",
-                "（比划手势）来，我教你怎么做～"
-            ];
+        // 生成AI回复（调用真实API）
+        async function generateResponse(userMessage) {
+            // API地址 - 根据部署环境修改
+            const API_URL = 'http://localhost:5001/api/chat';
 
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-            return `${randomResponse}\n\n（这是模拟回复，实际使用时需要连接后端API）`;
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        session_id: 'default'  // 可以使用用户ID或会话ID
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.reply) {
+                    return data.reply;
+                } else if (data.error) {
+                    return `抱歉，出错了：${data.error}`;
+                } else {
+                    return '抱歉，我现在无法回复。请稍后再试。';
+                }
+            } catch (error) {
+                console.error('API调用失败:', error);
+                // 如果API调用失败，提供降级提示
+                return '无法连接到服务器。请检查网络连接，或稍后再试。';
+            }
         }
     </script>
 </body>
