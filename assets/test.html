@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .success {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+        }
+        p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .link {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+        }
+        .link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="success">✅</div>
+    <h1>服务器访问成功！</h1>
+    <p>如果你能看到这个页面，说明服务器运行正常。</p>
+    <p>当前访问地址：</p>
+    <script>
+        document.write('<p style="background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 5px;">' + window.location.href + '</p>');
+    </script>
+    <a href="hanna_chat.html" class="link">打开韩娜聊天界面 →</a>
+</body>
+</html>
