@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>韩娜 - 聊天</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background-color: #ededed;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航栏 */
+        .chat-header {
+            background-color: #ededed;
+            border-bottom: 1px solid #dcdcdc;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .back-button {
+            font-size: 18px;
+            color: #1aad19;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .header-icons {
+            margin-left: auto;
+            display: flex;
+            gap: 16px;
+            font-size: 20px;
+            color: #1aad19;
+        }
+
+        /* 聊天区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 70px 12px 60px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 时间戳 */
+        .timestamp {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .timestamp span {
+            background-color: rgba(0, 0, 0, 0.1);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* 消息气泡 */
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            align-items: flex-start;
+        }
+
+        .message.received {
+            flex-direction: row;
+        }
+
+        .message.sent {
+            flex-direction: row-reverse;
+        }
+
+        /* 头像 */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .message.received .avatar {
+            margin-right: 10px;
+        }
+
+        .message.sent .avatar {
+            margin-left: 10px;
+        }
+
+        /* 用户头像占位 */
+        .user-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        /* 消息内容 */
+        .message-content {
+            max-width: 70%;
+            position: relative;
+        }
+
+        .message.received .message-content {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .message.sent .message-content {
+            background-color: #95ec69;
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        /* 消息文字 */
+        .message-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #000;
+            word-wrap: break-word;
+        }
+
+        /* 消息三角形 */
+        .message.received .message-content::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 12px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 6px solid #fff;
+        }
+
+        .message.sent .message-content::before {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 12px;
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-left: 6px solid #95ec69;
+        }
+
+        /* 输入区域 */
+        .input-area {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #f7f7f7;
+            border-top: 1px solid #dcdcdc;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-icons {
+            font-size: 24px;
+            color: #1aad19;
+            cursor: pointer;
+        }
+
+        .input-field {
+            flex: 1;
+            background-color: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 16px;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .input-field:focus {
+            border-color: #1aad19;
+        }
+
+        .send-button {
+            background-color: #95ec69;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #000;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .send-button:hover {
+            background-color: #89e563;
+        }
+
+        /* 加载动画 */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #b0b0b0;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.6);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 滚动条样式 */
+        .chat-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .chat-header {
+                padding: 10px 14px;
+            }
+
+            .header-title {
+                font-size: 17px;
+            }
+
+            .chat-container {
+                padding: 66px 10px 60px;
+            }
+
+            .message-content {
+                max-width: 75%;
+            }
+
+            .message-text {
+                font-size: 15px;
+            }
+
+            .input-area {
+                padding: 8px 10px;
+            }
+
+            .input-field {
+                font-size: 15px;
+                padding: 8px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="chat-header">
+        <div class="back-button">‹</div>
+        <div class="header-title">韩娜</div>
+        <div class="header-icons">
+            <span>⋮</span>
+        </div>
+    </div>
+
+    <!-- 聊天区域 -->
+    <div class="chat-container" id="chatContainer">
+        <!-- 欢迎消息 -->
+        <div class="timestamp">
+            <span>刚刚</span>
+        </div>
+
+        <div class="message received">
+            <div class="avatar">
+                <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+            </div>
+            <div class="message-content">
+                <div class="message-text">你好呀！😊 我是韩娜，很高兴认识你！我是你的中国朋友～<br><br>无论你想了解中国的日常生活、美食推荐，还是需要帮忙解决各种小麻烦，我都很乐意帮你！<br><br>你在旅行还是生活呢？有什么特别想知道的吗？🌸</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="input-area">
+        <div class="input-icons">🎤</div>
+        <textarea 
+            class="input-field" 
+            id="messageInput" 
+            placeholder="输入消息..." 
+            rows="1"
+            onkeydown="handleKeyDown(event)"
+        ></textarea>
+        <div class="input-icons">😊</div>
+        <div class="input-icons">⊕</div>
+        <button class="send-button" id="sendButton" onclick="sendMessage()">发送</button>
+    </div>
+
+    <script>
+        // 消息历史
+        const messages = [];
+        let isTyping = false;
+
+        // 处理回车发送
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 自动调整输入框高度
+        const inputField = document.getElementById('messageInput');
+        inputField.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // 发送消息
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+
+            if (!message || isTyping) return;
+
+            // 清空输入框
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 添加用户消息
+            addMessage(message, 'sent');
+
+            // 显示正在输入
+            showTypingIndicator();
+
+            // 模拟AI回复
+            setTimeout(() => {
+                hideTypingIndicator();
+                const response = generateResponse(message);
+                addMessage(response, 'received');
+            }, 1000 + Math.random() * 1000);
+        }
+
+        // 添加消息到聊天界面
+        function addMessage(text, type) {
+            const chatContainer = document.getElementById('chatContainer');
+            const timestampDiv = document.createElement('div');
+            timestampDiv.className = 'timestamp';
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            timestampDiv.innerHTML = `<span>${timeString}</span>`;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            if (type === 'received') {
+                messageDiv.innerHTML = `
+                    <div class="avatar">
+                        <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="avatar user-avatar">
+                        你
+                    </div>
+                    <div class="message-content">
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+            }
+
+            chatContainer.appendChild(timestampDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            messages.push({ text, type, time: timeString });
+        }
+
+        // 显示正在输入指示器
+        function showTypingIndicator() {
+            isTyping = true;
+            const chatContainer = document.getElementById('chatContainer');
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message received';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="avatar">
+                    <img src="https://code.coze.cn/api/sandbox/coze_coding/file/proxy?expire_time=-1&file_path=assets%2Fimage-0oc4GrN_VqSMvmVs5iELx.webp&nonce=8200c8c9-3a7a-455e-91a3-07b0560a15ee&project_id=7614087271553368110&sign=bf950c9182e11d51456854ea88d79eb38298fd822c78337a626140708d77053f" alt="韩娜">
+                </div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 隐藏正在输入指示器
+        function hideTypingIndicator() {
+            isTyping = false;
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // 生成AI回复（模拟）
+        function generateResponse(userMessage) {
+            const responses = [
+                "(拍肩膀) 哈哈，我懂！😊 这事儿我当年也遇到过...",
+                "（认真脸）这很正常！刚到一个新地方都会有这种感觉～",
+                "（偷笑）别担心，有我在呢！",
+                "（眼睛一亮）这个我知道！让我来告诉你～",
+                "（温暖地笑）你已经做得很好了！继续加油！💪",
+                "（点头）嗯嗯，我明白那种感觉...",
+                "（比划手势）来，我教你怎么做～"
+            ];
+
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            return `${randomResponse}\n\n（这是模拟回复，实际使用时需要连接后端API）`;
+        }
+    </script>
+</body>
+</html>
